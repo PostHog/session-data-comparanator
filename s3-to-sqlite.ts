@@ -26,7 +26,6 @@ async function main() {
       throw new Error("Folder prefix not found");
     }
 
-    // get the session id from the folder name using regex session_recordings\/team_id\/\d+\/session_id\/(.*)\/data.*
     const sessionId = folder.match(
       /session_recordings\/team_id\/\d+\/session_id\/(.*)\/data.*/
     )?.[1];
