@@ -1,23 +1,16 @@
 import { downloadBlobContent, listSessions } from "./s3";
 import * as db from "./db";
 import { mergeSessionData } from "./db";
-import { loadFromAPI } from "./posthogAPI";
+import { Config } from ".";
 
-if (!process.env.BUCKET_NAME) {
-  throw new Error("BUCKET_NAME environment variable not set");
-}
+export async function loadFromS3(config: Config) {
+  if (config["skip-s3"]) {
+    console.log("Skipping S3");
+    return;
+  }
 
-if (!process.env.TEAM_ID || isNaN(parseInt(process.env.TEAM_ID))) {
-  throw new Error("TEAM_ID environment variable not set");
-}
-const teamId = parseInt(process.env.TEAM_ID);
-
-const bucketName = process.env.BUCKET_NAME;
-const prefix = `session_recordings/team_id/${teamId}/session_id/`;
-
-async function main() {
-  db.init();
-  const sessionFolders = await listSessions(bucketName, prefix);
+  const prefix = `session_recordings/team_id/${config.team}/session_id/`;
+  const sessionFolders = await listSessions(config.bucket, prefix);
 
   const blobPrefixesBySessionId: { [key: string]: string[] } = {};
 
@@ -52,16 +45,10 @@ async function main() {
       continue;
     }
     for (const blobPrefix of blobPrefixes) {
-      const fileContent = await downloadBlobContent(bucketName, blobPrefix);
+      const fileContent = await downloadBlobContent(config.bucket, blobPrefix);
 
       await mergeSessionData(sessionIdWithBlobs, fileContent);
     }
   }
-
   console.log("session data loaded from S3");
-  await loadFromAPI();
 }
-
-main().catch((err) => {
-  console.error("Error transferring data:", err);
-}).finally(() => {db.close()})

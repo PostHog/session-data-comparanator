@@ -1,19 +1,14 @@
+import { Config } from ".";
 import { getSessionIdsThatNeedAPIData, insertAPIData } from "./db";
 
 export const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
-const apiToken = process.env.API_TOKEN;
-if (!apiToken) {
-  throw new Error("API_TOKEN environment variable not set");
-}
-
-if (!process.env.TEAM_ID || isNaN(parseInt(process.env.TEAM_ID))) {
-  throw new Error("TEAM_ID environment variable not set");
-}
-const teamId = parseInt(process.env.TEAM_ID);
-
-async function fetchSessionSnapshots(sessionId: string): Promise<any> {
-  const url = `https://app.posthog.com/api/projects/${teamId}/session_recordings/${sessionId}/snapshots/?limit=500`;
+async function fetchSessionSnapshots(
+  sessionId: string,
+  teamId: number,
+  apiToken: string
+): Promise<any> {
+  const url = `https://app.posthog.com/api/projects/${teamId}/session_recordings/${sessionId}/snapshots/`;
   const headers = new Headers({
     "Content-Type": "application/json",
     Authorization: `Bearer ${apiToken}`,
@@ -60,11 +55,21 @@ async function fetchSessionSnapshots(sessionId: string): Promise<any> {
   return snapshots;
 }
 
-export async function loadFromAPI() {
+export async function loadFromAPI(config: Config) {
+  if (config["skip-api"]) {
+    console.log("Skipping API data load");
+    return;
+  }
+
   const sessionIds = await getSessionIdsThatNeedAPIData();
 
   for (const sessionId of sessionIds) {
-    const snapshots = await fetchSessionSnapshots(sessionId);
+    const snapshots = await fetchSessionSnapshots(
+      sessionId,
+      config.team,
+      config.apiToken
+    );
     await insertAPIData(sessionId, JSON.stringify(snapshots));
   }
+  console.log("sessions loaded from PostHog API");
 }

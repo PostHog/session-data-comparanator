@@ -117,3 +117,41 @@ export function close() {
   console.log("!!!!!!!!!!!!!!!!!!!");
   db.close();
 }
+
+export interface SessionDataPage {
+  sessionData: any[];
+  limit?: number;
+  offset?: number;
+}
+
+export async function pageSessions(
+  limit = 100,
+  offset = 0
+): Promise<SessionDataPage> {
+  const sessionData: any[] = await new Promise((resolve, reject) => {
+    db.all(
+      `SELECT session_id, data, api_data FROM sessions where data is not null and api_data is not null limit ${
+        limit + 1
+      } offset ${offset}`,
+      (err: any, rows: any) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      }
+    );
+  });
+  if (sessionData.length === 101) {
+    // there is more data to page through
+    return {
+      sessionData: sessionData.slice(0, 100),
+      limit,
+      offset: offset + 100,
+    };
+  } else {
+    return {
+      sessionData,
+    };
+  }
+}

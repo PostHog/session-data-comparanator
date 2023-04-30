@@ -12,3 +12,11 @@ This utility will
 2. decompress it and store it in a sqlite db
 3. for each row use the PostHog API to get the session data, and compare it with the data in the sqlite db
 4. if it is different it will store a report of the differences in the sqlite db
+
+## Usage
+
+e.g.
+
+```
+pnpm build && AWS_PROFILE=dev node index.js --team 16 --bucket posthog-cloud-dev-us-east-1-app-assets --skip-s3 --skip-api
+```
