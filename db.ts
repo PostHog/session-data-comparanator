@@ -6,7 +6,8 @@ export function init() {
   db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS sessions (
           session_id TEXT PRIMARY KEY,
-          data TEXT
+          data TEXT,
+          api_data TEXT
         )`);
   });
 }
@@ -20,7 +21,22 @@ export async function alreadyExists(sessionId: string): Promise<boolean> {
         if (err) {
           reject(err);
         } else {
-          resolve(!!row?.session_id ? true : false);
+          resolve(!!row?.session_id);
+        }
+      }
+    );
+  });
+}
+
+export async function getSessionIdsThatNeedAPIData(): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT session_id FROM sessions where api_data is null`,
+      (err: any, rows: any) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows.map((row: any) => row.session_id));
         }
       }
     );
@@ -68,6 +84,36 @@ export async function mergeSessionData(sessionId: string, data: string) {
   );
 }
 
+export async function insertAPIData(
+  sessionId: string,
+  data: string
+): Promise<void> {
+  console.log("inserting API data for session", sessionId);
+  return new Promise((resolve, reject) => {
+    db.run(
+      `UPDATE sessions SET api_data = ? WHERE session_id = ?`,
+      [data, sessionId],
+      (err) => {
+        if (err) {
+          console.error(
+            `Error inserting API data for session ${sessionId}:`,
+            err.message
+          );
+          reject(err);
+        } else {
+          console.log(
+            `Successfully inserted API data for session ${sessionId}`
+          );
+          resolve();
+        }
+      }
+    );
+  });
+}
+
 export function close() {
+  console.log("!!!!!!!!!!!!!!!!!!!");
+  console.log("calling db.close()");
+  console.log("!!!!!!!!!!!!!!!!!!!");
   db.close();
 }

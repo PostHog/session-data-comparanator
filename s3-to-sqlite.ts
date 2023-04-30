@@ -1,6 +1,7 @@
 import { downloadBlobContent, listSessions } from "./s3";
 import * as db from "./db";
 import { mergeSessionData } from "./db";
+import { loadFromAPI } from "./posthogAPI";
 
 if (!process.env.BUCKET_NAME) {
   throw new Error("BUCKET_NAME environment variable not set");
@@ -56,9 +57,11 @@ async function main() {
       await mergeSessionData(sessionIdWithBlobs, fileContent);
     }
   }
+
+  console.log("session data loaded from S3");
+  await loadFromAPI();
 }
 
-main()
-  .then(() => console.log("S3 data transferred to SQLite database"))
-  .catch((err) => console.error("Error transferring data:", err))
-  .finally(() => db.close());
+main().catch((err) => {
+  console.error("Error transferring data:", err);
+}).finally(() => {db.close()})
