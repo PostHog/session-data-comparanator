@@ -6,9 +6,11 @@ export const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 async function fetchSessionSnapshots(
   sessionId: string,
   teamId: number,
-  apiToken: string
+  apiToken: string,
+  delay: number,
+  pageSize: number
 ): Promise<any> {
-  const url = `https://app.posthog.com/api/projects/${teamId}/session_recordings/${sessionId}/snapshots/`;
+  const url = `https://app.posthog.com/api/projects/${teamId}/session_recordings/${sessionId}/snapshots/?limit=${pageSize}`;
   const headers = new Headers({
     "Content-Type": "application/json",
     Authorization: `Bearer ${apiToken}`,
@@ -22,10 +24,12 @@ async function fetchSessionSnapshots(
     // but will avoid rate limiting and avoid overloading ClickHouse
     // if the script is run while we have a burst of traffic
     console.log(
-      "waiting 1 second before loading a page of snapshots for session: ",
+      `waiting ${
+        delay / 1000
+      } second(s) before loading a page of snapshots for session: `,
       nextPageUrl
     );
-    await sleep(1000);
+    await sleep(delay);
 
     try {
       const response = await fetch(nextPageUrl, { headers });
@@ -67,7 +71,9 @@ export async function loadFromAPI(config: Config) {
     const snapshots = await fetchSessionSnapshots(
       sessionId,
       config.team,
-      config.apiToken
+      config.apiToken,
+      config.delay,
+      config.pageSize
     );
     await insertAPIData(sessionId, JSON.stringify(snapshots));
   }

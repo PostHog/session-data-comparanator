@@ -8,6 +8,8 @@ export interface Config {
   bucket: string;
   "skip-s3": boolean;
   apiToken: string;
+  delay: number;
+  pageSize: number;
   "skip-api": boolean;
   "skip-compare": boolean;
 }
@@ -32,6 +34,12 @@ function validate(config: Config) {
 
 async function main() {
   var config = require("minimist")(process.argv.slice(2)) as Config;
+  if (!config.delay) {
+    config.delay = 5000;
+  }
+  if (!config.pageSize) {
+    config.pageSize = 100;
+  }
   validate(config);
 
   db.init();

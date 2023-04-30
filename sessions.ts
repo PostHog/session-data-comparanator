@@ -18,10 +18,7 @@ export async function compareSessions(config: Config) {
   let limit: number | undefined = 100;
   let offset: number | undefined = 0;
 
-  const keyCompare: Record<
-    string,
-    { s3WindowIdLength: number; apiWindowIdLength: number }
-  > = {};
+  const overall = { matched: 0, notMatched: 0 };
 
   while (!!limit) {
     // load all the session data from the database
@@ -61,6 +58,7 @@ export async function compareSessions(config: Config) {
                   apiData[windowId].length +
                   ")"
               );
+              overall.matched++;
             } else {
               console.error(
                 "different number of snapshots for window id - ruh roh - (s3: " +
@@ -69,6 +67,7 @@ export async function compareSessions(config: Config) {
                   apiData[windowId].length +
                   ")"
               );
+              overall.notMatched++;
             }
           }
         } else {
@@ -86,5 +85,9 @@ export async function compareSessions(config: Config) {
     } catch (error: any) {
       throw error;
     }
+    console.log(
+      "out of " + (overall.matched + overall.notMatched) + " checked: ",
+      overall
+    );
   }
 }
