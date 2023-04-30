@@ -17,10 +17,6 @@ const prefix = `session_recordings/team_id/${teamId}/session_id/`;
 async function main() {
   db.init();
   const sessionFolders = await listSessions(bucketName, prefix);
-  if (!sessionFolders || sessionFolders.length === 0) {
-    console.log("No session folders found");
-    throw new Error("No session folders found");
-  }
 
   const blobPrefixesBySessionId: { [key: string]: string[] } = {};
 
@@ -31,26 +27,34 @@ async function main() {
     }
 
     // get the session id from the folder name using regex session_recordings\/team_id\/\d+\/session_id\/(.*)\/data.*
-    const sessionID = folder.match(
+    const sessionId = folder.match(
       /session_recordings\/team_id\/\d+\/session_id\/(.*)\/data.*/
     )?.[1];
 
-    if (!sessionID) {
+    if (!sessionId) {
       throw new Error("Session ID not found in blobPrefix " + folder);
     }
-    if (!blobPrefixesBySessionId[sessionID]) {
-      blobPrefixesBySessionId[sessionID] = [];
+    if (!blobPrefixesBySessionId[sessionId]) {
+      blobPrefixesBySessionId[sessionId] = [];
     }
-    blobPrefixesBySessionId[sessionID].push(folder);
+    blobPrefixesBySessionId[sessionId].push(folder);
   }
 
-  for (const [sessionID, blobPrefixes] of Object.entries(
+  for (const [sessionIdWithBlobs, blobPrefixes] of Object.entries(
     blobPrefixesBySessionId
   )) {
+    if (await db.alreadyExists(sessionIdWithBlobs)) {
+      console.log(
+        "skipping sessionId: ",
+        sessionIdWithBlobs,
+        " it is already in the database"
+      );
+      continue;
+    }
     for (const blobPrefix of blobPrefixes) {
       const fileContent = await downloadBlobContent(bucketName, blobPrefix);
 
-      await mergeSessionData(sessionID, fileContent);
+      await mergeSessionData(sessionIdWithBlobs, fileContent);
     }
   }
 }

@@ -74,5 +74,9 @@ export async function listSessions(
   } catch (err) {
     console.error(err);
   }
+
+  if (!sessionFolders || sessionFolders.length === 0) {
+    throw new Error("No session folders found");
+  }
   return sessionFolders;
 }

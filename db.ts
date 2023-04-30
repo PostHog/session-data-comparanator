@@ -11,6 +11,22 @@ export function init() {
   });
 }
 
+export async function alreadyExists(sessionId: string): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    db.get(
+      `SELECT session_id FROM sessions WHERE session_id = ?`,
+      [sessionId],
+      (err: any, row: any) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(!!row?.session_id ? true : false);
+        }
+      }
+    );
+  });
+}
+
 export async function mergeSessionData(sessionId: string, data: string) {
   // load any existing session data from sqllite
   const existingSessionData: string = await new Promise((resolve, reject) => {
