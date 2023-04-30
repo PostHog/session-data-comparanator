@@ -1,2 +1,4 @@
 node_modules/
 *.js
+.idea/
+session_data_v3.db
